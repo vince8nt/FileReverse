@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <array>
+#include <algorithm>
 
 std::array<char, 4096> buffer;
 
@@ -11,7 +12,7 @@ bool read_until_newline(std::ifstream& in_file) {
     in_file.getline(buffer.data(), buffer.size());
     while (!in_file.good()) {
         if (in_file.bad()) {
-            std::cerr << "Error: failed to read from input file: " << in_file.filename() << std::endl;
+            std::cerr << "Error: failed to read from input file: " << std::endl;
             exit(1);
         }
         if (in_file.eof()) {
@@ -31,7 +32,7 @@ void write_reverse_line(std::ifstream& in_file, const size_t line_start, std::of
         std::reverse(buffer.begin(), buffer.begin() + in_file.gcount());
         out_file.write(buffer.data(), in_file.gcount());
         if (out_file.fail()) {
-            std::cerr << "Error: failed to write to output file: " << out_file.filename() << std::endl;
+            std::cerr << "Error: failed to write to output file: " << std::endl;
             exit(1);
         }
     } while ([&in_file, &out_file, line_start]() {
@@ -43,7 +44,7 @@ void write_reverse_line(std::ifstream& in_file, const size_t line_start, std::of
                 in_file.seekg(buffer_start - read_size);
                 in_file.read(buffer.data(), read_size);
                 if (in_file.bad()) {
-                    std::cerr << "Error: failed to read from input file: " << in_file.filename() << std::endl;
+                    std::cerr << "Error: failed to read from input file: " << std::endl;
                     exit(1);
                 }
                 return true;
@@ -53,7 +54,7 @@ void write_reverse_line(std::ifstream& in_file, const size_t line_start, std::of
     // write newline
     out_file.write("\n", 1);
     if (out_file.fail()) {
-        std::cerr << "Error: failed to write to output file: " << out_file.filename() << std::endl;
+        std::cerr << "Error: failed to write to output file: " << std::endl;
         exit(1);
     }
     // seek back to end of line (for the case where we needed to read backwards)
@@ -73,7 +74,7 @@ int main(int argc, char** argv) {
         std::cerr << "Error: failed to open input file: " << argv[1] << std::endl;
         exit(1);
     }
-    std::ifstream out_file(argv[2], std::ofstream::out);
+    std::ofstream out_file(argv[2], std::ofstream::out);
     if (!out_file.is_open()) {
         std::cerr << "Error: failed to open output file: " << argv[2] << std::endl;
         exit(1);
