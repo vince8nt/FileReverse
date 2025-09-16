@@ -15,14 +15,16 @@ size_t read_until_newline(std::ifstream& in_file) {
     size_t buffer_start = in_file.tellg();
     in_file.getline(buffer.data(), buffer.size());
     while (true) {
-        if (in_file.bad()) {
-            std::cerr << "Error: failed to read from input file: " << std::endl;
-            exit(1);
-        } else if (in_file.fail()) {
-            buffer_start = in_file.tellg();
-            in_file.getline(buffer.data(), buffer.size());
-        } else {
-            return buffer_start;
+        switch (in_file.rdstate()) {
+            case std::ios::badbit:
+                std::cerr << "Error: failed to read from input file: " << std::endl;
+                exit(1);
+            case std::ios::failbit:
+                buffer_start = in_file.tellg();
+                in_file.getline(buffer.data(), buffer.size());
+                break;
+            default:
+                return buffer_start;
         }
     }
 }
@@ -46,11 +48,16 @@ void reverse_write_buffer(std::ofstream& out_file, const size_t size) {
 bool write_reverse_line(std::ifstream& in_file, std::ofstream& out_file) {
     const size_t line_start = in_file.tellg();
     size_t buffer_start = read_until_newline(in_file);
-    const size_t next_buffer_start = in_file.tellg();
+    const size_t next_line_start = in_file.tellg();
+    const bool eof = in_file.eof();
+    
+    // empty line at the end of the file
+    if (buffer_start == next_line_start) {
+        return true;
+    }
 
     // if eof is not reached, gcount() will include the newline (which wasn't read into the buffer)
     // this works for both Unix/Linux (newline is \n) and Windows (newline is \r\n)
-    bool eof = in_file.eof();
     reverse_write_buffer(out_file, in_file.gcount() - (eof ? 0 : 1));
 
     // seek backwards to read from line longer than the buffer
@@ -66,13 +73,11 @@ bool write_reverse_line(std::ifstream& in_file, std::ofstream& out_file) {
         reverse_write_buffer(out_file, read_size);
     }
     
+    // write newline and seek to initial in_file position
     if (!eof) {
-        // seek to end of line (initial read_file position)
-        if (in_file.tellg() != next_buffer_start) {
-            in_file.seekg(next_buffer_start);
+        if (in_file.tellg() != next_line_start) {
+            in_file.seekg(next_line_start);
         }
-
-        // write newline
         out_file.write("\n", 1);
         if (out_file.fail()) {
             std::cerr << "Error: failed to write to output file: " << std::endl;
